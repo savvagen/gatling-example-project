@@ -49,9 +49,6 @@ class SimulationWithEnvVariables extends BaseSimulation {
     }
   }
 
-
-
-
   val scn = scenario("User Service Scenario")
     .repeat(3){
       exec(getSpecificUser())
@@ -67,11 +64,14 @@ class SimulationWithEnvVariables extends BaseSimulation {
     .pause(1)
 
 
-
   before {
     println(s"Running test with ${userCount} users")
     println(s"Ramping users over ${rampDuration} seconds")
     println(s"Total test duration ${testDuration} seconds")
+  }
+
+  after {
+    println("Simulation successfully finished.")
   }
 
   setUp(scn.inject(

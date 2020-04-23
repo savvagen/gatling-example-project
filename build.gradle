@@ -1,0 +1,109 @@
+plugins {
+    id 'java'
+    id 'idea'
+    id 'scala'
+    id "com.github.lkishalmi.gatling" version "3.3.0"
+    id "de.undercouch.download" version "1.2"
+    id 'base'
+}
+
+ext {
+    gatlingVersion = '3.2.1'
+    gatlingDownloadDir = 'build/downloads/gatling'
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+
+sourceSets {
+    gatling {
+        scala.srcDir "src/gatling/scala"
+        resources.srcDir "src/gatling/resources"
+    }
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.3.11'
+    compile 'org.scala-lang:scala-library:2.11.8'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    // Gatling
+    compile group: 'io.gatling.highcharts', name: 'gatling-charts-highcharts', version: '3.1.3'
+    compile group: 'io.gatling', name: 'gatling-core', version: '3.1.3'
+    gatling 'com.google.code.gson:gson:2.8.0'
+    gatlingCompile 'org.apache.commons:commons-lang3:3.4'
+    gatlingCompile group: 'com.github.javafaker', name: 'javafaker', version: '1.0.2'
+    gatlingRuntime 'cglib:cglib-nodep:3.2.0'
+    // Logging
+    gatlingCompile(
+            "ch.qos.logback:logback-classic:1.2.3",
+            "ch.qos.logback:logback-core:1.2.3",
+            "com.fasterxml.jackson.core:jackson-databind:2.10.3"
+    )
+
+}
+
+
+//**
+//Gatling plugin configurations
+//**
+gatling {
+    simulations = {
+        include "**/simulations/SimulationWithEnvVariables.scala"
+        // include "**/*Simulation*.scala"
+        // include "**/JsonServerStressTest.scala"
+        // include "**/package1/*Simulation.scala"
+    }
+    // include classes and resources from src/main
+    includeMainOutput = false
+    // include classes and resources from src/test
+    includeTestOutput = false
+
+}
+
+
+//task downloadGatling(type: Copy) {
+//    exec {
+//        workingDir "$rootDir"
+//        commandLine 'sh', '-c', "" +
+//          "wget -P $gatlingDownloadDir https://repo1.maven.org/maven2/io/gatling/highcharts/gatling-charts-highcharts-bundle/${gatlingVersion}/gatling-charts-highcharts-bundle-${gatlingVersion}-bundle.zip &&" +
+//          "unzip $gatlingDownloadDir/gatling-charts-highcharts-bundle-${gatlingVersion}-bundle.zip -x -d $gatlingDownloadDir &&" +
+//          "mv $gatlingDownloadDir/gatling-charts-highcharts-bundle-${gatlingVersion} gatling-$gatlingVersion"
+//    }
+//}
+
+import de.undercouch.gradle.tasks.download.Download
+
+task downloadGatling(type: Download){
+    src "https://repo1.maven.org/maven2/io/gatling/highcharts/gatling-charts-highcharts-bundle/${gatlingVersion}/gatling-charts-highcharts-bundle-${gatlingVersion}-bundle.zip"
+    dest "gatling-${gatlingVersion}.zip"
+    doLast {
+        exec {
+            commandLine 'sh', '-c', "unzip gatling-${gatlingVersion}.zip -x &&" +
+              "mv gatling-charts-highcharts-bundle-${gatlingVersion} gatling-$gatlingVersion &&"
+              //"rm -r gatling-${gatlingVersion}.zip"
+        }
+    }
+}
+
+
+task deleteGatlingArtifact(type: Delete){
+    delete "gatling-${gatlingVersion}.zip" // 'uglyFolder', 'uglyFile'
+    followSymlinks = true
+}
+
+downloadGatling.finalizedBy(deleteGatlingArtifact)
+
+
+clean.doFirst {
+    delete "gatling-${gatlingVersion}.zip"
+    delete "results"
+
+}
+
+wrapper {
+    gradleVersion = "6.3"
+}
